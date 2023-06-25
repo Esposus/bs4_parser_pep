@@ -4,10 +4,11 @@ import logging
 
 from prettytable import PrettyTable
 
-from constants import BASE_DIR, DATETIME_FORMAT
+from constants import DATETIME_FORMAT, BASE_DIR
 
 
 def control_output(results, cli_args):
+    """Контроль вывода результатов парсинга."""
     output = cli_args.output
     if output == 'pretty':
         pretty_output(results)
@@ -18,11 +19,13 @@ def control_output(results, cli_args):
 
 
 def default_output(results):
+    """Вывод данных в терминал построчно."""
     for row in results:
         print(*row)
 
 
 def pretty_output(results):
+    """Вывод данных в формате PrettyTable."""
     table = PrettyTable()
     table.field_names = results[0]
     table.align = 'l'
@@ -31,13 +34,14 @@ def pretty_output(results):
 
 
 def file_output(results, cli_args):
-    results_dir = BASE_DIR / 'results'
-    results_dir.mkdir(exist_ok=True)
+    """Создание директории и запись данных в файл."""
+    RESULTS_DIR = RESULTS_DIR = BASE_DIR / 'results'
+    RESULTS_DIR.mkdir(exist_ok=True)
     parser_mode = cli_args.mode
     now = dt.datetime.now()
     now_formatted = now.strftime(DATETIME_FORMAT)
     file_name = f'{parser_mode}_{now_formatted}.csv'
-    file_path = results_dir / file_name
+    file_path = RESULTS_DIR / file_name
     with open(file_path, 'w', encoding='utf-8') as f:
         writer = csv.writer(f, dialect='unix')
         writer.writerows(results)
