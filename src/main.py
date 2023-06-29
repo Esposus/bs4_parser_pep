@@ -6,9 +6,16 @@ import requests_cache
 from tqdm import tqdm
 
 from configs import configure_argument_parser, configure_logging
-from constants import EXPECTED_STATUS, MAIN_DOC_URL, PEP_URL, BASE_DIR
+from constants import DOWNLOADS_DIR, EXPECTED_STATUS, MAIN_DOC_URL, PEP_URL, BASE_DIR
+from exceptions import ParserFindTagException
 from outputs import control_output
 from utils import find_tag, get_soup
+
+
+CONSOLE_ARGS = 'Аргументы командной строки: {args}'
+DOWNLOAD_SUCCESSFUL = ('Архив был загружен и сохранен: {archive_path}')
+START = 'Парсер запущен!'
+FINISH = 'Парсер завершил работу.'
 
 
 def whats_new(session):
@@ -16,10 +23,9 @@ def whats_new(session):
     whats_new_url = urljoin(MAIN_DOC_URL, 'whatsnew/')
     soup = get_soup(session, whats_new_url)
 
-    main_div = find_tag(soup, 'section', attrs={'id': 'what-s-new-in-python'})
-    div_with_ul = find_tag(main_div, 'div', attrs={'class': 'toctree-wrapper'})
-    sections_by_python = div_with_ul.find_all('li',
-                                              attrs={'class': 'toctree-l1'})
+    sections_by_python = soup.select(
+        '#what-s-new-in-python div.toctree-wrapper li.toctree-l1'
+    )
 
     results = [('Ссылка на статью', 'Заголовок', 'Редактор, Автор')]
     for section in tqdm(sections_by_python):
@@ -33,7 +39,8 @@ def whats_new(session):
             dl = find_tag(soup, 'dl')
             dl_text = dl.text.replace('\n', ' ')
             results.append((version_link, h1.text, dl_text))
-        except ConnectionError:
+        except ConnectionError as error:
+            logging.info(f'Отсутствует соединение с сайтом {error}')
             continue
     return results
 
@@ -50,18 +57,17 @@ def latest_versions(session):
             a_tags = ul.find_all('a')
             break
     else:
-        raise Exception('Ничего не нашлось')
+        raise ParserFindTagException('Ничего не нашлось')
 
     results = [('Ссылка на документацию', 'Версия', 'Статус')]
     pattern = r'Python (?P<version>\d\.\d+) \((?P<status>.*)\)'
     for a_tag in a_tags:
         text_match = re.search(pattern, a_tag.text)
-        link = a_tag['href']
         if text_match is not None:
             version, status = text_match.groups()
         else:
             version, status = a_tag.text, ''
-        results.append((link, version, status))
+        results.append((a_tag['href'], version, status))
 
     return results
 
@@ -85,7 +91,7 @@ def download(session):
     response = session.get(archive_url)
     with open(archive_path, 'wb') as file:
         file.write(response.content)
-    logging.info(f'Архив был загружен и сохранён: {archive_path}')
+    logging.info(DOWNLOAD_SUCCESSFUL.format(archive_path=archive_path))
 
 
 def pep(session):
@@ -101,11 +107,11 @@ def pep(session):
 
     results = [('Статус', 'Количество')]
 
-    for n in tqdm(tr_tags):
+    for tr_tag in tqdm(tr_tags):
         total_peps += 1
-        data = list(find_tag(n, 'abbr').text)
+        data = list(find_tag(tr_tag, 'abbr').text)
         preview_status = data[1:][0] if len(data) > 1 else ''
-        url = urljoin(PEP_URL, find_tag(n, 'a', attrs={
+        url = urljoin(PEP_URL, find_tag(tr_tag, 'a', attrs={
             'class': 'pep reference internal'})['href'])
         soup = get_soup(session, url)
         table_info = find_tag(soup, 'dl',
@@ -125,7 +131,7 @@ def pep(session):
             logging.warning(error_message)
     for status in status_sum:
         results.append((status, status_sum[status]))
-    results.append(('Total', total_peps))
+    results.append(('Всего', total_peps))
     return results
 
 
@@ -139,11 +145,10 @@ MODE_TO_FUNCTION = {
 
 def main():
     configure_logging()
-    logging.info('Парсер запущен!')
+    logging.info(START)
     arg_parser = configure_argument_parser(MODE_TO_FUNCTION.keys())
     args = arg_parser.parse_args()
-    logging.info(
-        f'Аргументы командной строки: {args}')
+    logging.info(CONSOLE_ARGS.format(args=args))
     try:
         session = requests_cache.CachedSession()
         if args.clear_cache:
@@ -153,9 +158,9 @@ def main():
 
         if results is not None:
             control_output(results, args)
-    except Exception:
-        logging.exception('Ошибка при выполнении.', stack_info=True)
-    logging.info('Парсер завершил работу.')
+    except Exception as error:
+        logging.exception(f'Ошибка при выполнении {error}', stack_info=True)
+    logging.info(FINISH)
 
 
 if __name__ == '__main__':
