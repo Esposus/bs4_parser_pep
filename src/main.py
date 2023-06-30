@@ -7,10 +7,9 @@ import requests_cache
 from tqdm import tqdm
 
 from configs import configure_argument_parser, configure_logging
-from constants import (
-     CONSOLE_ARGS, DOWNLOADS_DIR,
-     DOWNLOAD_SUCCESSFUL, EXPECTED_STATUS, FINISH_MESSAGE,
-     MAIN_DOC_URL, PEP_URL, START_MESSAGE)
+from constants import (CONSOLE_ARGS, DOWNLOADS_DIR,
+                       DOWNLOAD_SUCCESSFUL, EXPECTED_STATUS, FINISH_MESSAGE,
+                       MAIN_DOC_URL, PEP_URL, START_MESSAGE)
 from exceptions import ParserFindTagException
 from outputs import control_output
 from utils import find_tag, get_soup
