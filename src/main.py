@@ -115,20 +115,20 @@ def pep(session):
             string='Status').parent.find_next_sibling('dd').string
         if status_pep_page not in EXPECTED_STATUS[preview_status]:
             error_messages.append(f'Несовпадающие статусы:\n'
-                             f'{url}\n'
-                             f'Статус в карточке: {status_pep_page}\n'
-                             f'Ожидаемые статусы: '
-                             f'{EXPECTED_STATUS[preview_status]}')
+                                  f'{url}\n'
+                                  f'Статус в карточке: {status_pep_page}\n'
+                                  f'Ожидаемые статусы: '
+                                  f'{EXPECTED_STATUS[preview_status]}')
         results[status_pep_page] += 1
 
     for error_message in error_messages:
         logging.warning(error_message)
 
-    return  [
+    return [
         ('Статус', 'Количество'),
         results.items(),
         ('Всего', sum(results.values())),
-    ] 
+    ]
 
 
 MODE_TO_FUNCTION = {

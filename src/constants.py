@@ -11,6 +11,7 @@ RESULTS_DIR = BASE_DIR / 'results'
 FILE = 'file'
 PRETTY = 'pretty'
 
+CONNECTION_ERROR = 'Возникла ошибка {error} при загрузке страницы {url}'
 CONSOLE_ARGS = 'Аргументы командной строки: {args}'
 DOWNLOAD_SUCCESSFUL = ('Архив был загружен и сохранен: {archive_path}')
 FILE_SAVED_MESSAGE = 'Файл с результатами был сохранён: {file_path}'
