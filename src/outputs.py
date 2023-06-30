@@ -4,7 +4,7 @@ import logging
 
 from prettytable import PrettyTable
 
-from constants import (FILE, FILE_SAVED_MESSAGE, PRETTY, 
+from constants import (FILE, FILE_SAVED_MESSAGE, PRETTY,
                        RESULTS_DIR, DATETIME_FORMAT, BASE_DIR
                     )
 
@@ -40,12 +40,11 @@ def file_output(results, cli_args):
 
 
 OUTPUT_FUNCTIONS = {
-    'file': file_output,
-    'pretty': pretty_output,
+    FILE: file_output,
+    PRETTY: pretty_output,
     None: default_output,
 }
 
 
 def control_output(results, cli_args, outputs=OUTPUT_FUNCTIONS):
     OUTPUT_FUNCTIONS.get(cli_args.output)(results, cli_args)
-
