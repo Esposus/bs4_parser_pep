@@ -4,9 +4,8 @@ import logging
 
 from prettytable import PrettyTable
 
-from constants import (FILE, FILE_SAVED_MESSAGE, PRETTY,
-                       RESULTS_DIR, DATETIME_FORMAT,
-                    )
+from constants import (FILE, FILE_SAVED_MESSAGE,
+                       PRETTY, RESULTS_DIR, DATETIME_FORMAT)
 
 
 def default_output(results, *args):
