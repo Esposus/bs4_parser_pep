@@ -5,7 +5,7 @@ import logging
 from prettytable import PrettyTable
 
 from constants import (FILE, FILE_SAVED_MESSAGE, PRETTY,
-                       RESULTS_DIR, DATETIME_FORMAT, BASE_DIR
+                       RESULTS_DIR, DATETIME_FORMAT,
                     )
 
 
@@ -26,7 +26,6 @@ def pretty_output(results, *args):
 
 def file_output(results, cli_args):
     """Создание директории и запись данных в файл."""
-    RESULTS_DIR = BASE_DIR / 'results'
     RESULTS_DIR.mkdir(exist_ok=True)
     parser_mode = cli_args.mode
     now = dt.datetime.now()
