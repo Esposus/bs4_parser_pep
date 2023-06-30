@@ -7,7 +7,7 @@ import requests_cache
 from tqdm import tqdm
 
 from configs import configure_argument_parser, configure_logging
-from constants import (CONSOLE_ARGS, DOWNLOADS_DIR,
+from constants import (BASE_DIR, CONSOLE_ARGS,
                        DOWNLOAD_SUCCESSFUL, EXPECTED_STATUS, FINISH_MESSAGE,
                        MAIN_DOC_URL, PEP_URL, START_MESSAGE)
 from exceptions import ParserFindTagException
@@ -82,6 +82,7 @@ def download(session):
     archive_url = urljoin(downloads_url, pdf_a4_link)
     filename = archive_url.split('/')[-1]
 
+    DOWNLOADS_DIR = BASE_DIR / 'downloads'
     DOWNLOADS_DIR.mkdir(exist_ok=True)
     archive_path = DOWNLOADS_DIR / filename
     response = session.get(archive_url)
