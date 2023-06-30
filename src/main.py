@@ -1,21 +1,20 @@
 import logging
 import re
+from collections import defaultdict
 from urllib.parse import urljoin
 
 import requests_cache
 from tqdm import tqdm
 
 from configs import configure_argument_parser, configure_logging
-from constants import DOWNLOADS_DIR, EXPECTED_STATUS, MAIN_DOC_URL, PEP_URL, BASE_DIR
+from constants import (
+     BASE_DIR, CONSOLE_ARGS, DOWNLOADS_DIR,
+     DOWNLOAD_SUCCESSFUL, EXPECTED_STATUS, FINISH_MESSAGE,
+     MAIN_DOC_URL, PEP_URL, START_MESSAGE
+)
 from exceptions import ParserFindTagException
 from outputs import control_output
 from utils import find_tag, get_soup
-
-
-CONSOLE_ARGS = 'Аргументы командной строки: {args}'
-DOWNLOAD_SUCCESSFUL = ('Архив был загружен и сохранен: {archive_path}')
-START = 'Парсер запущен!'
-FINISH = 'Парсер завершил работу.'
 
 
 def whats_new(session):
@@ -97,18 +96,14 @@ def download(session):
 def pep(session):
     """Парсинг документов PEP."""
     soup = get_soup(session, PEP_URL)
-
     section_tag = find_tag(soup, 'section', attrs={'id': 'numerical-index'})
     tbody_tag = find_tag(section_tag, 'tbody')
     tr_tags = tbody_tag.find_all('tr')
 
-    status_sum = {}
-    total_peps = 0
-
-    results = [('Статус', 'Количество')]
+    error_messages = []
+    results = defaultdict(int)
 
     for tr_tag in tqdm(tr_tags):
-        total_peps += 1
         data = list(find_tag(tr_tag, 'abbr').text)
         preview_status = data[1:][0] if len(data) > 1 else ''
         url = urljoin(PEP_URL, find_tag(tr_tag, 'a', attrs={
@@ -118,21 +113,22 @@ def pep(session):
                               attrs={'class': 'rfc2822 field-list simple'})
         status_pep_page = table_info.find(
             string='Status').parent.find_next_sibling('dd').string
-        if status_pep_page in status_sum:
-            status_sum[status_pep_page] += 1
-        if status_pep_page not in status_sum:
-            status_sum[status_pep_page] = 1
         if status_pep_page not in EXPECTED_STATUS[preview_status]:
-            error_message = (f'Несовпадающие статусы:\n'
+            error_messages.append(f'Несовпадающие статусы:\n'
                              f'{url}\n'
                              f'Статус в карточке: {status_pep_page}\n'
                              f'Ожидаемые статусы: '
                              f'{EXPECTED_STATUS[preview_status]}')
-            logging.warning(error_message)
-    for status in status_sum:
-        results.append((status, status_sum[status]))
-    results.append(('Всего', total_peps))
-    return results
+        results[status_pep_page] += 1
+
+    for error_message in error_messages:
+        logging.warning(error_message)
+
+    return  [
+        ('Статус', 'Количество'),
+        results.items(),
+        ('Всего', sum(results.values())),
+    ] 
 
 
 MODE_TO_FUNCTION = {
@@ -145,7 +141,7 @@ MODE_TO_FUNCTION = {
 
 def main():
     configure_logging()
-    logging.info(START)
+    logging.info(START_MESSAGE)
     arg_parser = configure_argument_parser(MODE_TO_FUNCTION.keys())
     args = arg_parser.parse_args()
     logging.info(CONSOLE_ARGS.format(args=args))
@@ -160,7 +156,7 @@ def main():
             control_output(results, args)
     except Exception as error:
         logging.exception(f'Ошибка при выполнении {error}', stack_info=True)
-    logging.info(FINISH)
+    logging.info(FINISH_MESSAGE)
 
 
 if __name__ == '__main__':

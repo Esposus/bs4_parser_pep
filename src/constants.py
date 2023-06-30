@@ -7,6 +7,16 @@ PEP_URL = 'https://peps.python.org/'
 OUTPUT_CHOICES = ('pretty', 'file')
 LOG_DIR = BASE_DIR / 'logs'
 DOWNLOADS_DIR = BASE_DIR / 'downloads'
+RESULTS_DIR = BASE_DIR / 'results'
+FILE = 'file'
+PRETTY = 'pretty'
+
+CONSOLE_ARGS = 'Аргументы командной строки: {args}'
+DOWNLOAD_SUCCESSFUL = ('Архив был загружен и сохранен: {archive_path}')
+FILE_SAVED_MESSAGE = 'Файл с результатами был сохранён: {file_path}'
+FINISH_MESSAGE = 'Парсер завершил работу.'
+TAG_NOT_FOUND = 'Не найден тег {tag} {attrs}'
+START_MESSAGE = 'Парсер запущен!'
 
 LOG_FORMAT = '%(asctime)s - [%(levelname)s] - %(message)s'
 DT_FORMAT = '%d.%m.%Y %H:%M:%S'
