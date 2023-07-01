@@ -76,7 +76,7 @@ def download(session):
     table_tag = find_tag(main_tag, 'table', {'class': 'docutils'})
     pdf_a4_tag = find_tag(table_tag, 'a',
                           {'href': re.compile(r'.+pdf-a4\.zip$')})
-    pdf_a4_link = pdf_a4_tag['href'] 
+    pdf_a4_link = pdf_a4_tag['href']
 
     archive_url = urljoin(downloads_url, pdf_a4_link)
     filename = archive_url.split('/')[-1]
@@ -107,16 +107,19 @@ def pep(session):
             url = urljoin(PEP_URL, find_tag(tr_tag, 'a', attrs={
                 'class': 'pep reference internal'})['href'])
             soup = get_soup(session, url)
-            table_info = find_tag(soup, 'dl',
-                                attrs={'class': 'rfc2822 field-list simple'})
+            table_info = find_tag(
+                soup, 'dl', attrs={'class': 'rfc2822 field-list simple'}
+            )
             status_pep_page = table_info.find(
                 string='Status').parent.find_next_sibling('dd').string
             if status_pep_page not in EXPECTED_STATUS[preview_status]:
-                error_messages.append(f'Несовпадающие статусы:\n'
-                                    f'{url}\n'
-                                    f'Статус в карточке: {status_pep_page}\n'
-                                    f'Ожидаемые статусы: '
-                                    f'{EXPECTED_STATUS[preview_status]}')
+                error_messages.append(
+                    f'Несовпадающие статусы:\n'
+                    f'{url}\n'
+                    f'Статус в карточке: {status_pep_page}\n'
+                    f'Ожидаемые статусы: '
+                    f'{EXPECTED_STATUS[preview_status]}'
+                )
             results[status_pep_page] += 1
         except ParserFindTagException:
             error_messages.append(NOT_FOUND_MESSAGE)

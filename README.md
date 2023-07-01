@@ -13,7 +13,7 @@
 
 ### Технологии
 ```
-python 3.9
+python 3.7
 beautifulsoup4
 requests-cache
 ```

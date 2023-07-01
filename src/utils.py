@@ -22,7 +22,9 @@ def find_tag(soup, tag, attrs=None):
     """Перехват ошибки поиска тегов."""
     searched_tag = soup.find(tag, attrs=({} if attrs is None else attrs))
     if searched_tag is None:
-        raise ParserFindTagException(TAG_NOT_FOUND.format(tag=tag, attrs=attrs))
+        raise ParserFindTagException(
+            TAG_NOT_FOUND.format(tag=tag, attrs=attrs)
+        )
     return searched_tag
 
 
