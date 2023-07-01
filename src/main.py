@@ -7,47 +7,45 @@ import requests_cache
 from tqdm import tqdm
 
 from configs import configure_argument_parser, configure_logging
-from constants import (BASE_DIR, CONSOLE_ARGS,
-                       DOWNLOAD_SUCCESSFUL, EXPECTED_STATUS, FINISH_MESSAGE,
-                       MAIN_DOC_URL, PEP_URL, START_MESSAGE)
+from constants import BASE_DIR, EXPECTED_STATUS, MAIN_DOC_URL, PEP_URL
 from exceptions import ParserFindTagException
 from outputs import control_output
 from utils import find_tag, get_soup
+
+
+CONSOLE_ARGS = 'Аргументы командной строки: {args}'
+DOWNLOAD_SUCCESSFUL = 'Архив был загружен и сохранен: {archive_path}'
+ERROR = 'Ошибка при выполнении {error}'
+FINISH_MESSAGE = 'Парсер завершил работу.'
+START_MESSAGE = 'Парсер запущен!'
+NOT_FOUND_MESSAGE = 'Ничего не нашлось.'
 
 
 def whats_new(session):
     """Парсер информации из статей о нововведениях в Python."""
     whats_new_url = urljoin(MAIN_DOC_URL, 'whatsnew/')
     soup = get_soup(session, whats_new_url)
-
-    sections_by_python = soup.select(
-        '#what-s-new-in-python div.toctree-wrapper li.toctree-l1'
+    references = soup.select(
+        '#what-s-new-in-python div.toctree-wrapper li.toctree-l1 a reference'
     )
-
     results = [('Ссылка на статью', 'Заголовок', 'Редактор, Автор')]
-    for section in tqdm(sections_by_python):
-        version_a_tag = section.find('a')
-        href = version_a_tag['href']
-        version_link = urljoin(whats_new_url, href)
+    for reference in tqdm(references):
+        version_link = urljoin(whats_new_url, reference['href'])
         try:
             soup = get_soup(session, version_link)
-
             h1 = find_tag(soup, 'h1')
             dl = find_tag(soup, 'dl')
             dl_text = dl.text.replace('\n', ' ')
             results.append((version_link, h1.text, dl_text))
-        except ConnectionError as error:
-            logging.info(f'Отсутствует соединение с сайтом {error}')
-            continue
+        except ParserFindTagException:
+            logging.info(NOT_FOUND_MESSAGE)
     return results
 
 
 def latest_versions(session):
     """Парсер статусов версий Python."""
     soup = get_soup(session, MAIN_DOC_URL)
-
-    sidebar = find_tag(soup, 'div', attrs={'class': 'sphinxsidebarwrapper'})
-    ul_tags = sidebar.find_all('ul')
+    ul_tags = soup.select('div sphinxsidebarwrapper > ul')
 
     for ul in ul_tags:
         if 'All versions' in ul.text:
@@ -78,7 +76,8 @@ def download(session):
     table_tag = find_tag(main_tag, 'table', {'class': 'docutils'})
     pdf_a4_tag = find_tag(table_tag, 'a',
                           {'href': re.compile(r'.+pdf-a4\.zip$')})
-    pdf_a4_link = pdf_a4_tag['href']
+    pdf_a4_link = pdf_a4_tag['href'] 
+
     archive_url = urljoin(downloads_url, pdf_a4_link)
     filename = archive_url.split('/')[-1]
 
@@ -102,25 +101,27 @@ def pep(session):
     results = defaultdict(int)
 
     for tr_tag in tqdm(tr_tags):
-        data = list(find_tag(tr_tag, 'abbr').text)
-        preview_status = data[1:][0] if len(data) > 1 else ''
-        url = urljoin(PEP_URL, find_tag(tr_tag, 'a', attrs={
-            'class': 'pep reference internal'})['href'])
-        soup = get_soup(session, url)
-        table_info = find_tag(soup, 'dl',
-                              attrs={'class': 'rfc2822 field-list simple'})
-        status_pep_page = table_info.find(
-            string='Status').parent.find_next_sibling('dd').string
-        if status_pep_page not in EXPECTED_STATUS[preview_status]:
-            error_messages.append(f'Несовпадающие статусы:\n'
-                                  f'{url}\n'
-                                  f'Статус в карточке: {status_pep_page}\n'
-                                  f'Ожидаемые статусы: '
-                                  f'{EXPECTED_STATUS[preview_status]}')
-        results[status_pep_page] += 1
+        try:
+            data = list(find_tag(tr_tag, 'abbr').text)
+            preview_status = data[1:][0] if len(data) > 1 else ''
+            url = urljoin(PEP_URL, find_tag(tr_tag, 'a', attrs={
+                'class': 'pep reference internal'})['href'])
+            soup = get_soup(session, url)
+            table_info = find_tag(soup, 'dl',
+                                attrs={'class': 'rfc2822 field-list simple'})
+            status_pep_page = table_info.find(
+                string='Status').parent.find_next_sibling('dd').string
+            if status_pep_page not in EXPECTED_STATUS[preview_status]:
+                error_messages.append(f'Несовпадающие статусы:\n'
+                                    f'{url}\n'
+                                    f'Статус в карточке: {status_pep_page}\n'
+                                    f'Ожидаемые статусы: '
+                                    f'{EXPECTED_STATUS[preview_status]}')
+            results[status_pep_page] += 1
+        except ParserFindTagException:
+            error_messages.append(NOT_FOUND_MESSAGE)
 
-    for error_message in error_messages:
-        logging.warning(error_message)
+    list(map(logging.warning, error_messages))
 
     return [
         ('Статус', 'Количество'),
@@ -153,7 +154,7 @@ def main():
         if results is not None:
             control_output(results, args)
     except Exception as error:
-        logging.exception(f'Ошибка при выполнении {error}', stack_info=True)
+        logging.exception(ERROR.format(error=error), stack_info=True)
     logging.info(FINISH_MESSAGE)
 
 
