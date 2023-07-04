@@ -126,9 +126,9 @@ def pep(session):
             if status_pep_page not in EXPECTED_STATUS[preview_status]:
                 error_messages.append(
                     ERROR_PEP_STATUS.format(
-                    url=url,
-                    status=status_pep_page,
-                    expected_status=EXPECTED_STATUS[preview_status]
+                        url=url,
+                        status=status_pep_page,
+                        expected_status=EXPECTED_STATUS[preview_status]
                     )
                 )
             results[status_pep_page] += 1
