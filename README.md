@@ -72,4 +72,4 @@ python main.py [-h], [--help]
 
 ### Автор проекта:
 
-- [Дмитрий морозов](https://github.com/Esposus "GitHub аккаунт")
+- [Дмитрий Морозов](https://github.com/Esposus "GitHub аккаунт")
