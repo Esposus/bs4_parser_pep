@@ -45,7 +45,7 @@ def whats_new(session):
             dl = find_tag(soup, 'dl')
             dl_text = dl.text.replace('\n', ' ')
             results.append((version_link, h1.text, dl_text))
-        except ParserFindTagException:
+        except ConnectionError:
             error_messages.append(NOT_FOUND_MESSAGE)
     list(map(logging.warning, error_messages))
     return results
@@ -130,7 +130,7 @@ def pep(session):
                     )
                 )
             results[status_pep_page] += 1
-        except ParserFindTagException:
+        except ConnectionError:
             error_messages.append(NOT_FOUND_MESSAGE)
 
     list(map(logging.warning, error_messages))
