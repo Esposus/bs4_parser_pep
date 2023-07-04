@@ -16,6 +16,10 @@ from utils import find_tag, get_soup
 CONSOLE_ARGS = 'Аргументы командной строки: {args}'
 DOWNLOAD_SUCCESSFUL = 'Архив был загружен и сохранен: {archive_path}'
 ERROR = 'Ошибка при выполнении {error}'
+ERROR_PEP_STATUS = (
+    'Несовпадающие статусы:\n{url}\nСтатус в карточке: {status_pep_page}\n'
+    'Ожидаемые статусы: {EXPECTED_STATUS[preview_status]}'
+    )
 FINISH_MESSAGE = 'Парсер завершил работу.'
 START_MESSAGE = 'Парсер запущен!'
 NOT_FOUND_MESSAGE = 'Ничего не нашлось.'
@@ -24,6 +28,7 @@ NOT_FOUND_MESSAGE = 'Ничего не нашлось.'
 def whats_new(session):
     """Парсер информации из статей о нововведениях в Python."""
     whats_new_url = urljoin(MAIN_DOC_URL, 'whatsnew/')
+    error_messages = []
     soup = get_soup(session, whats_new_url)
     references = soup.select(
         '#what-s-new-in-python div.toctree-wrapper li.toctree-l1 a reference'
@@ -38,7 +43,8 @@ def whats_new(session):
             dl_text = dl.text.replace('\n', ' ')
             results.append((version_link, h1.text, dl_text))
         except ParserFindTagException:
-            logging.info(NOT_FOUND_MESSAGE)
+            error_messages.append(NOT_FOUND_MESSAGE)
+    list(map(logging.warning, error_messages))
     return results
 
 
@@ -81,9 +87,9 @@ def download(session):
     archive_url = urljoin(downloads_url, pdf_a4_link)
     filename = archive_url.split('/')[-1]
 
-    DOWNLOADS_DIR = BASE_DIR / 'downloads'
-    DOWNLOADS_DIR.mkdir(exist_ok=True)
-    archive_path = DOWNLOADS_DIR / filename
+    downloads_dir = BASE_DIR / 'downloads'
+    downloads_dir.mkdir(exist_ok=True)
+    archive_path = downloads_dir / filename
     response = session.get(archive_url)
     with open(archive_path, 'wb') as file:
         file.write(response.content)
@@ -107,6 +113,8 @@ def pep(session):
             url = urljoin(PEP_URL, find_tag(tr_tag, 'a', attrs={
                 'class': 'pep reference internal'})['href'])
             soup = get_soup(session, url)
+            if not soup:
+                error_messages.append(NOT_FOUND_MESSAGE)
             table_info = find_tag(
                 soup, 'dl', attrs={'class': 'rfc2822 field-list simple'}
             )
@@ -114,11 +122,11 @@ def pep(session):
                 string='Status').parent.find_next_sibling('dd').string
             if status_pep_page not in EXPECTED_STATUS[preview_status]:
                 error_messages.append(
-                    f'Несовпадающие статусы:\n'
-                    f'{url}\n'
-                    f'Статус в карточке: {status_pep_page}\n'
-                    f'Ожидаемые статусы: '
-                    f'{EXPECTED_STATUS[preview_status]}'
+                    ERROR_PEP_STATUS.format(
+                    url=url,
+                    status=status_pep_page,
+                    expected_status=EXPECTED_STATUS[preview_status]
+                    )
                 )
             results[status_pep_page] += 1
         except ParserFindTagException:
