@@ -116,8 +116,6 @@ def pep(session):
             url = urljoin(PEP_URL, find_tag(tr_tag, 'a', attrs={
                 'class': 'pep reference internal'})['href'])
             soup = get_soup(session, url)
-            if not soup:
-                error_messages.append(NOT_FOUND_MESSAGE)
             table_info = find_tag(
                 soup, 'dl', attrs={'class': 'rfc2822 field-list simple'}
             )
